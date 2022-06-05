@@ -1,0 +1,53 @@
+service: nm-dt-atg-feed
+
+frameworkVersion: '2'
+
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  region: ${opt:region, 'us-west-2'}
+  stage: ${opt:stage, 'dev'}
+  lambdaHashingVersion: 20201221
+  iamRoleStatements: # Grant privilege read from Kinesis work stream 
+    - Effect: Allow 
+      Action: 
+        - kinesis:GetRecords 
+        - kinesis:GetShardIterator 
+        - kinesis:DescribeStream 
+        - kinesis:ListStreams 
+        - kinesis:PutRecord 
+        - kinesis:PutRecords 
+      Resource: 
+        Fn::GetAtt: 
+          - KinesisStream  
+          - Arn
+    - Effect: Allow
+      Action:
+        - sts:AssumeRole
+      Resource: arn:aws:iam::333009048743:role/bizdev-dynamodb-full-access
+
+custom:
+  account: ${opt:account, 'bizdev'}
+  region: ${opt:region, 'us-west-2'}
+  stage: ${opt:stage, 'dev'}
+
+functions:
+  streamHandler:
+    handler: dataStream.nmProductFeedReplicationDev
+    events:
+      - stream:
+          type: kinesis
+          arn: 
+            Fn::GetAtt:
+              - KinesisStream
+              - Arn
+          consumer: true
+
+resources:
+  Resources:
+    KinesisStream: 
+      Type: AWS::Kinesis::Stream
+      Properties: 
+        Name: nm-product-feed-stream-${self:provider.stage}
+        ShardCount: 1
