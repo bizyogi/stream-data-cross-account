@@ -2,13 +2,17 @@ service: nm-dt-atg-feed
 
 frameworkVersion: '2'
 
-
 provider:
   name: aws
   runtime: nodejs12.x
   region: ${opt:region, 'us-west-2'}
   stage: ${opt:stage, 'dev'}
   lambdaHashingVersion: 20201221
+  environment:
+    RoleArn: arn:aws:iam::333009048743:role/bizdev-dynamodb-full-access
+    RoleSessionName: bizYogi
+    DurationSeconds: 900
+    TARGET_DB: nm-dt-product-feed-dev
   iamRoleStatements: # Grant privilege read from Kinesis work stream 
     - Effect: Allow 
       Action: 

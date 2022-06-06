@@ -3,9 +3,9 @@
 const AWS = require('aws-sdk');
 const sts = new AWS.STS();
 const roleToAssume = {
-  RoleArn: 'arn:aws:iam::333009048743:role/bizdev-dynamodb-full-access',
-  RoleSessionName: 'bizYogi',
-  DurationSeconds: 900
+  RoleArn: process.env.RoleArn,
+  RoleSessionName: process.env.RoleSessionName,
+  DurationSeconds: process.env.DurationSeconds
 };
 
 module.exports.nmProductFeedReplicationDev = async (event) => {
@@ -17,10 +17,7 @@ module.exports.nmProductFeedReplicationDev = async (event) => {
       convertedData = convertStreamDataAndProccess(element);
     }
 
-    console.log('convertedData ==========>', convertedData);
-
-    const resultData = await putImageDataInCrossAccountDynamodbTable({ convertedData });
-    console.log(resultData, 'resultData');
+    await putImageDataInCrossAccountDynamodbTable({ convertedData });
 
     return true;
   } catch (error) {
@@ -34,8 +31,6 @@ const convertStreamDataAndProccess = (record) => {
     const imageStrData = Buffer.from(record.kinesis.data, 'base64').toString()
     // ...to an object
     const imageData = JSON.parse(imageStrData);
-
-    console.log('imageData =====>', imageData);
 
     return imageData;
 
@@ -58,7 +53,7 @@ const putImageDataInCrossAccountDynamodbTable = async ({ convertedData }) => {
 
     // Query function
     const documentClient = new AWS.DynamoDB({ apiVersion: '2012-08-10', credentials: creds, region: 'us-west-2' });
-    const TableName = 'nm-dt-product-feed-dev';
+    const TableName = process.env.TARGET_DB;
 
     if (convertedData.eventName === 'INSERT') {
       const insertParams = {
